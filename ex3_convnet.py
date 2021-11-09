@@ -1,3 +1,4 @@
+from typing import OrderedDict
 import torch
 import torch.nn as nn
 import torchvision
@@ -109,11 +110,77 @@ class ConvNet(nn.Module):
         # For Q2.a make use of BatchNorm2d layer from the torch.nn module.              #
         # For Q3.b Use Dropout layer from the torch.nn module.                          #
         #################################################################################
-        layers = []
+        self.layers = []
+        
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        prev_size = input_size
 
+        """
+        n_blocks = len(hidden_layers)
 
+        for i in range(n_blocks):
+            block = nn.Sequential(OrderedDict([
+                ("conv{}".format(i+1), nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same")),
+                ("maxPool{}".format(i+1), nn.MaxPool2d(kernel_size=2, stride=2)),
+                ("relu{}".format(i+1), nn.ReLU())
+            ])
+            )
+            setattr(self, "block{}".format(i+1), block)
+            prev_size = hidden_layers[i]
+        
+        FCblock = nn.Sequential(OrderedDict([ 
+                ("flatten", nn.Flatten()),
+                ("FC", nn.Linear(prev_size, out_features=num_classes))
+            ])
+            )
 
+        setattr(self, "FC", FCblock)
+
+        """
+        
+
+        """
+        for i in range(len(hidden_layers)):
+            # add a conv block, 3x3 kernels
+            block = nn.Sequential(OrderedDict([
+                ("conv{}".format(i+1), nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same")),
+                ("maxPool{}".format(i+1), nn.MaxPool2d(kernel_size=2, stride=2)),
+                ("relu{}".format(i+1), nn.ReLU())
+            ])
+            )
+
+            prev_size = hidden_layers[i]
+            self.layers.append(block)
+            
+        self.layers.append(
+            nn.Sequential(OrderedDict([ 
+                ("flatten", nn.Flatten()),
+                ("FC", nn.Linear(prev_size, out_features=num_classes))
+            ])
+            )
+        )
+        """
+        
+       
+        
+        prev_size = input_size
+
+        # Add the convolutional blocks
+        for i in range(len(hidden_layers)):
+            # add a conv block, 3x3 kernels
+            self.layers.append(nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same"))
+            self.layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
+            self.layers.append(nn.ReLU())
+            prev_size = hidden_layers[i]
+        
+        # Flatten
+        self.layers.append(nn.Flatten())
+
+        # Add the FC part
+        self.layers.append(nn.Linear(prev_size, out_features=num_classes))
+        
+        self.network = nn.ModuleList(self.layers)
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     def forward(self, x):
@@ -121,8 +188,12 @@ class ConvNet(nn.Module):
         # TODO: Implement the forward pass computations                                 #
         #################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+        prev_out = x
+        for i in range(len(self.layers)):
+            prev_out = self.layers[i](prev_out)
 
-
+        out = prev_out
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return out
@@ -140,9 +211,16 @@ def PrintModelSize(model, disp=True):
     # training                                                                      #
     #################################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    if disp:
+        print(list(model.parameters())) 
 
+    # For trainable parameters only:
+    model_sz =  sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-
+    # Alternative
+    #tmp = np.array([x.cpu().detach().numpy().size for x in model.parameters()]).sum()
+    
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return model_sz
 
@@ -173,6 +251,8 @@ def VisualizeFilter(model):
 # library.  Please complete the code for the ConvNet class evaluating the model
 #--------------------------------------------------------------------------------------
 model = ConvNet(input_size, hidden_size, num_classes, norm_layer=norm_layer).to(device)
+
+
 # Q2.a - Initialize the model with correct batch norm layer
 
 model.apply(weights_init)
