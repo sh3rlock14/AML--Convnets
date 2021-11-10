@@ -1,3 +1,4 @@
+from typing import OrderedDict
 import torch
 import torch.nn as nn
 import torchvision
@@ -6,6 +7,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True' #workaround for numpy torch collision
 
 def weights_init(m):
     if type(m) == nn.Linear:
@@ -110,10 +114,55 @@ class ConvNet(nn.Module):
         # For Q3.b Use Dropout layer from the torch.nn module.                          #
         #################################################################################
         layers = []
+        
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        prev_size = input_size
 
+        """
+        n_blocks = len(hidden_layers)
 
+        for i in range(n_blocks):
+            block = nn.Sequential(OrderedDict([
+                ("conv{}".format(i+1), nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same")),
+                ("maxPool{}".format(i+1), nn.MaxPool2d(kernel_size=2, stride=2)),
+                ("relu{}".format(i+1), nn.ReLU())
+            ])
+            )
+            setattr(self, "block{}".format(i+1), block)
+            prev_size = hidden_layers[i]
+        
+        FCblock = nn.Sequential(OrderedDict([ 
+                ("flatten", nn.Flatten()),
+                ("FC", nn.Linear(prev_size, out_features=num_classes))
+            ])
+            )
 
+        setattr(self, "FC", FCblock)
+
+        """
+        prev_size = input_size
+
+        # Add the convolutional blocks
+        for i in range(len(hidden_layers)):
+            # add a conv block, 3x3 kernels
+            layers.append(nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same"))
+            layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
+            layers.append(nn.ReLU())
+            prev_size = hidden_layers[i]
+
+        self.features = nn.Sequential(*layers)
+        
+        layers.clear()
+
+        # Flatten
+        layers.append(nn.Flatten())
+
+        # Add the FC part
+        layers.append(nn.Linear(prev_size, out_features=num_classes))
+        
+
+        self.classifier = nn.Sequential(*layers)
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     def forward(self, x):
@@ -121,8 +170,18 @@ class ConvNet(nn.Module):
         # TODO: Implement the forward pass computations                                 #
         #################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+
+        prev_out = x
+        
+        for i in range(len(self.features)):
+            prev_out = self.features[i](prev_out)
+        
+        for i in range(len(self.classifier)):
+            prev_out = self.classifier[i](prev_out)
 
 
+        out = prev_out
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return out
@@ -140,9 +199,16 @@ def PrintModelSize(model, disp=True):
     # training                                                                      #
     #################################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    if disp:
+        print(list(model.parameters())) 
 
+    # For trainable parameters only:
+    model_sz =  sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-
+    # Alternative
+    #tmp = np.array([x.cpu().detach().numpy().size for x in model.parameters()]).sum()
+    
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return model_sz
 
@@ -159,8 +225,11 @@ def VisualizeFilter(model):
     # You can use matlplotlib.imshow to visualize an image in python                #
     #################################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    weights = model.features[0].weight.data.cpu()#.detach().numpy() (B,C,H,W)
+    grid = torchvision.utils.make_grid(weights, nrow=16, normalize=True, scale_each=True)
+    plt.imshow(grid.permute(1,2,0))
+    plt.show()
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -173,6 +242,8 @@ def VisualizeFilter(model):
 # library.  Please complete the code for the ConvNet class evaluating the model
 #--------------------------------------------------------------------------------------
 model = ConvNet(input_size, hidden_size, num_classes, norm_layer=norm_layer).to(device)
+
+
 # Q2.a - Initialize the model with correct batch norm layer
 
 model.apply(weights_init)
@@ -182,7 +253,7 @@ print(model)
 #======================================================================================
 # Q1.b: Implementing the function to count the number of trainable parameters in the model
 #======================================================================================
-PrintModelSize(model)
+mod_size = PrintModelSize(model, disp=False)
 #======================================================================================
 # Q1.a: Implementing the function to visualize the filters in the first conv layers.
 # Visualize the filters before training
@@ -290,7 +361,8 @@ plt.plot(accuracy_val, 'r', label='Val accuracy')
 plt.legend()
 plt.show()
 
-
+# Q1.c Compare the filters before and after training.
+VisualizeFilter(model) # filters after training
 
 #################################################################################
 # TODO: Q2.b Implement the early stopping mechanism to load the weights from the#
