@@ -171,9 +171,15 @@ class ConvNet(nn.Module):
         #################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         
+
         prev_out = x
-        for i in range(len(self.layers)):
-            prev_out = self.layers[i](prev_out)
+        
+        for i in range(len(self.features)):
+            prev_out = self.features[i](prev_out)
+        
+        for i in range(len(self.classifier)):
+            prev_out = self.classifier[i](prev_out)
+
 
         out = prev_out
 
@@ -355,7 +361,8 @@ plt.plot(accuracy_val, 'r', label='Val accuracy')
 plt.legend()
 plt.show()
 
-
+# Q1.c Compare the filters before and after training.
+VisualizeFilter(model) # filters after training
 
 #################################################################################
 # TODO: Q2.b Implement the early stopping mechanism to load the weights from the#
