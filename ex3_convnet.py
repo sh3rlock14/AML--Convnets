@@ -4,6 +4,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import numpy as np
+import copy
 
 import matplotlib.pyplot as plt
 
@@ -262,8 +263,6 @@ mod_size = PrintModelSize(model, disp=False)
 #======================================================================================
 VisualizeFilter(model)
 
-
-
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg)
@@ -278,7 +277,6 @@ accuracy_val = []
 best_model = type(model)(input_size, hidden_size, num_classes, norm_layer=norm_layer) # get a new instance
 #best_model = ConvNet(input_size, hidden_size, num_classes, norm_layer=norm_layer)
 for epoch in range(num_epochs):
-
     model.train()
 
     loss_iter = 0
@@ -304,12 +302,10 @@ for epoch in range(num_epochs):
             
     loss_train.append(loss_iter/(len(train_loader)*batch_size))
 
-    
     # Code to update the lr
     lr *= learning_rate_decay
     update_lr(optimizer, lr)
-    
-        
+          
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -339,6 +335,26 @@ for epoch in range(num_epochs):
         #################################################################################
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        if epoch == 0:
+            patience = 2 
+            best_val_loss = loss_val[-1] 
+            idBestEpoch = 0
+            epochs_with_no_improve = 0
+
+        if loss_val[-1] < best_val_loss:
+            best_model = copy.deepcopy(model)
+            idBestEpoch = epoch+1 # store the index of the best epoch so far
+            epochs_with_no_improve = 0
+            patience = 2
+            best_val_loss= loss_val[-1]
+
+        else:
+            epochs_with_no_improve += 1
+            # Check early stopping condition
+            # if epochs_with_no_improve == patience:
+            if epochs_with_no_improve == patience:
+                print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
+                break
 
         
 
