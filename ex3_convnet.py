@@ -41,7 +41,7 @@ learning_rate_decay = 0.95
 reg=0.001
 num_training= 49000
 num_validation =1000
-norm_layer = None #norm_layer = 'BN'
+norm_layer = 'BN'
 print(hidden_size)
 
 
@@ -146,6 +146,8 @@ class ConvNet(nn.Module):
         for i in range(len(hidden_layers)):
             # add a conv block, 3x3 kernels
             layers.append(nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same"))
+            if norm_layer == 'BN':
+                layers.append(nn.BatchNorm2d(hidden_layers[i]))
             layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
             layers.append(nn.ReLU())
             prev_size = hidden_layers[i]
