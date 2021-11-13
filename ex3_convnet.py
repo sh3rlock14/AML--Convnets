@@ -4,7 +4,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import numpy as np
-
+import copy
 import matplotlib.pyplot as plt
 
 
@@ -340,9 +340,29 @@ for epoch in range(num_epochs):
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        
+        # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        if epoch == 0:
+            patience = 2
+            best_val_loss = loss_val[-1]
+            idBestEpoch = 0
+            epochs_with_no_improve = 0
 
-        # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        if loss_val[-1] < best_val_loss:
+            best_model = copy.deepcopy(model)
+            idBestEpoch = epoch + 1  # store the index of the best epoch so far
+            epochs_with_no_improve = 0
+            patience = 2
+            best_val_loss = loss_val[-1]
+
+        else:
+            epochs_with_no_improve += 1
+            # Check early stopping condition
+            # if epochs_with_no_improve == patience:
+            if epochs_with_no_improve == patience:
+                print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch + 1))
+                break
+
+    # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     
 
@@ -372,7 +392,7 @@ VisualizeFilter(model) # filters after training
 #################################################################################
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-
+model=copy.deepcopy(best_model)
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
