@@ -7,6 +7,7 @@ import numpy as np
 import copy
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 import os
@@ -335,26 +336,31 @@ for epoch in range(num_epochs):
         #################################################################################
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        if epoch == 0:
-            patience = 2 
-            best_val_loss = loss_val[-1] 
-            idBestEpoch = 0
-            epochs_with_no_improve = 0
+        withEarlyStop = True
+        p = 2
+        tolerance = 1e-5
 
-        if loss_val[-1] < best_val_loss:
-            best_model = copy.deepcopy(model)
-            idBestEpoch = epoch+1 # store the index of the best epoch so far
-            epochs_with_no_improve = 0
-            patience = 2
-            best_val_loss= loss_val[-1]
+        if withEarlyStop:
+            if epoch == 0:
+                patience = p 
+                best_val_loss = loss_val[-1] 
+                idBestEpoch = 0
+                epochs_with_no_improve = 0
 
-        else:
-            epochs_with_no_improve += 1
-            # Check early stopping condition
-            # if epochs_with_no_improve == patience:
-            if epochs_with_no_improve == patience:
-                print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
-                break
+            if (loss_val[-1]-best_val_loss >= tolerance) and (loss_val[-1]-best_val_loss > 0):
+                best_model = copy.deepcopy(model)
+                idBestEpoch = epoch+1 # store the index of the best epoch so far (don't know if)
+                epochs_with_no_improve = 0
+                patience = p
+                best_val_loss= loss_val[-1]
+
+            else:
+                epochs_with_no_improve += 1
+                # Check early stopping condition
+                # if epochs_with_no_improve == patience:
+                if epochs_with_no_improve == patience:
+                    print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
+                    break
 
         
 
@@ -367,20 +373,21 @@ for epoch in range(num_epochs):
 model.eval()
 
 
+print("loss_train len: {}".format(len(loss_train)))
 
 plt.figure(2)
+plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.plot(loss_train, 'r', label='Train loss')
 plt.plot(loss_val, 'g', label='Val loss')
 plt.legend()
 plt.show()
 
 plt.figure(3)
+plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.plot(accuracy_val, 'r', label='Val accuracy')
 plt.legend()
 plt.show()
 
-# Q1.c Compare the filters before and after training.
-VisualizeFilter(model) # filters after training
 
 #################################################################################
 # TODO: Q2.b Implement the early stopping mechanism to load the weights from the#
@@ -388,7 +395,7 @@ VisualizeFilter(model) # filters after training
 #################################################################################
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-
+model = copy.deepcopy(best_model)
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -411,10 +418,8 @@ with torch.no_grad():
 
 
 # Q1.c: Implementing the function to visualize the filters in the first conv layers.
-# Visualize the filters before training
+# Visualize the filters after training
 VisualizeFilter(model)
-
-
 
 # Save the model checkpoint
 #torch.save(model.state_dict(), 'model.ckpt')
