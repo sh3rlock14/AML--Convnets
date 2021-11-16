@@ -55,7 +55,18 @@ print(hidden_size)
 # TODO: Q3.a Choose the right data augmentation transforms with the right       #
 # hyper-parameters and put them in the data_aug_transforms variable             #
 #################################################################################
-data_aug_transforms = []
+data_aug_transforms = [
+    transforms.RandomEqualize(p=1.0),
+    transforms.ColorJitter(
+        brightness=(0.2, 0.8),
+        contrast=(0.2,0.5),
+        saturation=(0.1,0.3),
+        hue=(-0.2, 0.2)
+        ),
+    transforms.RandomGrayscale(p=0.2),
+    transforms.RandomAdjustSharpness(2, p=0.7),
+    transforms.RandomPerspective(distortion_scale=0.2, p=0.6),
+]
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
 
