@@ -55,7 +55,10 @@ print(hidden_size)
 # TODO: Q3.a Choose the right data augmentation transforms with the right       #
 # hyper-parameters and put them in the data_aug_transforms variable             #
 #################################################################################
-data_aug_transforms = [
+data_aug_transforms = []
+# *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
+data_aug_transforms.extend([
     transforms.RandomEqualize(p=1.0),
     transforms.ColorJitter(
         brightness=(0.2, 0.8),
@@ -66,9 +69,7 @@ data_aug_transforms = [
     transforms.RandomGrayscale(p=0.2),
     transforms.RandomAdjustSharpness(2, p=0.7),
     transforms.RandomPerspective(distortion_scale=0.2, p=0.6),
-]
-# *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+])
 
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -348,7 +349,7 @@ for epoch in range(num_epochs):
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         withEarlyStop = True
-        p = 2
+        p = 10
         tolerance = 1e-5
 
         if withEarlyStop:
@@ -358,7 +359,7 @@ for epoch in range(num_epochs):
                 idBestEpoch = 0
                 epochs_with_no_improve = 0
 
-            if (loss_val[-1]-best_val_loss >= tolerance) and (loss_val[-1]-best_val_loss > 0):
+            if ( np.abs(loss_val[-1]-best_val_loss) >= tolerance) and ( (loss_val[-1]-best_val_loss) < 0):
                 best_model = copy.deepcopy(model)
                 idBestEpoch = epoch+1 # store the index of the best epoch so far (don't know if)
                 epochs_with_no_improve = 0
@@ -372,6 +373,8 @@ for epoch in range(num_epochs):
                 if epochs_with_no_improve == patience:
                     print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
                     break
+            
+            print("@ epoch {}): best_val_loss: {}; loss_val: {}".format(epoch+1, best_val_loss, loss_val[-1]))
 
         
 
