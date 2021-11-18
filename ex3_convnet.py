@@ -11,6 +11,8 @@ from matplotlib.ticker import MaxNLocator
 
 
 import os
+
+#from torchvision.transforms.functional import scale
 os.environ['KMP_DUPLICATE_LIB_OK']='True' #workaround for numpy torch collision
 
 def weights_init(m):
@@ -36,7 +38,7 @@ print('Using device: %s'%device)
 input_size = 3
 num_classes = 10
 hidden_size = [128, 512, 512, 512, 512]
-num_epochs = 20
+num_epochs = 25
 batch_size = 200
 learning_rate = 2e-3
 learning_rate_decay = 0.95
@@ -59,6 +61,7 @@ data_aug_transforms = []
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
 data_aug_transforms.extend([
+    
     transforms.RandomEqualize(p=1.0),
     transforms.ColorJitter(
         brightness=(0.2, 0.8),
@@ -66,19 +69,23 @@ data_aug_transforms.extend([
         saturation=(0.1,0.3),
         hue=(-0.2, 0.2)
         ),
-    transforms.RandomGrayscale(p=0.2),
+    #transforms.RandomGrayscale(p=0.2),
     transforms.RandomAdjustSharpness(2, p=0.7),
-    transforms.RandomPerspective(distortion_scale=0.2, p=0.6),
+    transforms.ToTensor(),
+    transforms.RandomErasing(p=0.65, scale=(0.10, 0.20)),
+    transforms.ToPILImage(), 
+    transforms.RandomAffine(degrees=(-45,45))
 ])
 
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                     ])
+                                    transforms.RandomErasing(),
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ])
 test_transform = transforms.Compose([transforms.ToTensor(),
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                     ])
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ])
 cifar_dataset = torchvision.datasets.CIFAR10(root='datasets/',
                                            train=True,
                                            transform=norm_transform,
