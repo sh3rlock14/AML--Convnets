@@ -12,7 +12,7 @@ from matplotlib.ticker import MaxNLocator
 
 import os
 
-#from torchvision.transforms.functional import scale
+
 os.environ['KMP_DUPLICATE_LIB_OK']='True' #workaround for numpy torch collision
 
 def weights_init(m):
@@ -171,6 +171,7 @@ class ConvNet(nn.Module):
                 layers.append(nn.BatchNorm2d(hidden_layers[i]))
             layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
             layers.append(nn.ReLU())
+            layers.append(nn.Dropout(p=0.3))
             prev_size = hidden_layers[i]
 
         self.features = nn.Sequential(*layers)
