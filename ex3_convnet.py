@@ -4,11 +4,15 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import numpy as np
+import copy
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 import os
+
+#from torchvision.transforms.functional import scale
 os.environ['KMP_DUPLICATE_LIB_OK']='True' #workaround for numpy torch collision
 
 def weights_init(m):
@@ -34,7 +38,7 @@ print('Using device: %s'%device)
 input_size = 3
 num_classes = 10
 hidden_size = [128, 512, 512, 512, 512]
-num_epochs = 20
+num_epochs = 25
 batch_size = 200
 learning_rate = 2e-3
 learning_rate_decay = 0.95
@@ -56,15 +60,32 @@ print(hidden_size)
 data_aug_transforms = []
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+data_aug_transforms.extend([
+    
+    transforms.RandomEqualize(p=1.0),
+    transforms.ColorJitter(
+        brightness=(0.2, 0.8),
+        contrast=(0.2,0.5),
+        saturation=(0.1,0.3),
+        hue=(-0.2, 0.2)
+        ),
+    #transforms.RandomGrayscale(p=0.2),
+    transforms.RandomAdjustSharpness(2, p=0.7),
+    transforms.ToTensor(),
+    transforms.RandomErasing(p=0.65, scale=(0.10, 0.20)),
+    transforms.ToPILImage(), 
+    transforms.RandomAffine(degrees=(-45,45))
+])
 
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                     ])
+                                    transforms.RandomErasing(),
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ])
 test_transform = transforms.Compose([transforms.ToTensor(),
-                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                     ])
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ])
 cifar_dataset = torchvision.datasets.CIFAR10(root='datasets/',
                                            train=True,
                                            transform=norm_transform,
@@ -262,8 +283,6 @@ mod_size = PrintModelSize(model, disp=False)
 #======================================================================================
 VisualizeFilter(model)
 
-
-
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=reg)
@@ -278,7 +297,6 @@ accuracy_val = []
 best_model = type(model)(input_size, hidden_size, num_classes, norm_layer=norm_layer) # get a new instance
 #best_model = ConvNet(input_size, hidden_size, num_classes, norm_layer=norm_layer)
 for epoch in range(num_epochs):
-
     model.train()
 
     loss_iter = 0
@@ -304,12 +322,10 @@ for epoch in range(num_epochs):
             
     loss_train.append(loss_iter/(len(train_loader)*batch_size))
 
-    
     # Code to update the lr
     lr *= learning_rate_decay
     update_lr(optimizer, lr)
-    
-        
+          
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -339,6 +355,33 @@ for epoch in range(num_epochs):
         #################################################################################
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        withEarlyStop = True
+        p = 10
+        tolerance = 1e-5
+
+        if withEarlyStop:
+            if epoch == 0:
+                patience = p 
+                best_val_loss = loss_val[-1] 
+                idBestEpoch = 0
+                epochs_with_no_improve = 0
+
+            if ( np.abs(loss_val[-1]-best_val_loss) >= tolerance) and ( (loss_val[-1]-best_val_loss) < 0):
+                best_model = copy.deepcopy(model)
+                idBestEpoch = epoch+1 # store the index of the best epoch so far (don't know if)
+                epochs_with_no_improve = 0
+                patience = p
+                best_val_loss= loss_val[-1]
+
+            else:
+                epochs_with_no_improve += 1
+                # Check early stopping condition
+                # if epochs_with_no_improve == patience:
+                if epochs_with_no_improve == patience:
+                    print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
+                    break
+            
+            print("@ epoch {}): best_val_loss: {}; loss_val: {}".format(epoch+1, best_val_loss, loss_val[-1]))
 
         
 
@@ -351,20 +394,21 @@ for epoch in range(num_epochs):
 model.eval()
 
 
+print("loss_train len: {}".format(len(loss_train)))
 
 plt.figure(2)
+plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.plot(loss_train, 'r', label='Train loss')
 plt.plot(loss_val, 'g', label='Val loss')
 plt.legend()
 plt.show()
 
 plt.figure(3)
+plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.plot(accuracy_val, 'r', label='Val accuracy')
 plt.legend()
 plt.show()
 
-# Q1.c Compare the filters before and after training.
-VisualizeFilter(model) # filters after training
 
 #################################################################################
 # TODO: Q2.b Implement the early stopping mechanism to load the weights from the#
@@ -372,7 +416,7 @@ VisualizeFilter(model) # filters after training
 #################################################################################
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-
+model = copy.deepcopy(best_model)
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -395,10 +439,8 @@ with torch.no_grad():
 
 
 # Q1.c: Implementing the function to visualize the filters in the first conv layers.
-# Visualize the filters before training
+# Visualize the filters after training
 VisualizeFilter(model)
-
-
 
 # Save the model checkpoint
 #torch.save(model.state_dict(), 'model.ckpt')
