@@ -169,10 +169,10 @@ if fine_tune:
     for name,param in model.named_parameters():
       if (str(name).split(".")[1])=="classifier":
         params_to_update.append(param)
-        param.requires_grad == True
+        param.requires_grad = True
         print("\t",name)
       else:
-        param.requires_grad == False
+        param.requires_grad = False
 
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
