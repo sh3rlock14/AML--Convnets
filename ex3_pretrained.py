@@ -4,9 +4,8 @@ import torch.nn as nn
 import torchvision
 from torchvision import models
 import torchvision.transforms as transforms
-import numpy as np
 import matplotlib.pyplot as plt
-import copy
+
 
 
 def weights_init(m):
@@ -115,6 +114,8 @@ class VggModel(nn.Module):
         # disable training the feature extraction layers based on the fine_tune flag.   #
         #################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        import numpy as np
+        import copy
         self.model = models.vgg11_bn(pretrained= True)
         self.layer_config = layer_config
         self.n_class = n_class
@@ -259,7 +260,8 @@ for epoch in range(num_epochs):
         #################################################################################
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        
+        import numpy as np
+        import copy
         withEarlyStop = True
         p = 10
         tolerance = 1e-5
@@ -314,7 +316,7 @@ plt.show()
 #################################################################################
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-
+import copy
 model = copy.deepcopy(best_model)
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
