@@ -38,7 +38,7 @@ print('Using device: %s'%device)
 input_size = 3
 num_classes = 10
 hidden_size = [128, 512, 512, 512, 512]
-num_epochs = 25
+num_epochs = 20
 batch_size = 200
 learning_rate = 2e-3
 learning_rate_decay = 0.95
@@ -63,24 +63,24 @@ data_aug_transforms = []
 data_aug_transforms.extend([
     
     transforms.RandomEqualize(p=1.0),
-    transforms.ColorJitter(
-        brightness=(0.2, 0.8),
-        contrast=(0.2,0.5),
-        saturation=(0.1,0.3),
-        hue=(-0.2, 0.2)
-        ),
+    #transforms.ColorJitter(
+    #    brightness=(0.2, 0.8),
+        #contrast=(0.2,0.5),
+        #saturation=(0.1,0.3),
+    #    hue=(-0.2, 0.2)
+    #    ),
+    transforms.RandomCrop(32, padding=4),
     #transforms.RandomGrayscale(p=0.2),
-    transforms.RandomAdjustSharpness(2, p=0.7),
+    #transforms.RandomAdjustSharpness(0, p=0.7),
     transforms.ToTensor(),
-    transforms.RandomErasing(p=0.65, scale=(0.10, 0.20)),
+    transforms.RandomErasing(p=0.5, scale=(0.39, 0.40), ratio=(1.,1.)),
     transforms.ToPILImage(), 
-    transforms.RandomAffine(degrees=(-45,45))
+    transforms.RandomAffine(degrees=(-20,20))
 ])
 
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
-                                    transforms.RandomErasing(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                                     ])
 test_transform = transforms.Compose([transforms.ToTensor(),
@@ -228,7 +228,7 @@ def PrintModelSize(model, disp=True):
 
     # For trainable parameters only:
     model_sz =  sum(p.numel() for p in model.parameters() if p.requires_grad)
-
+    print("Model size: ", model_sz)
     # Alternative
     #tmp = np.array([x.cpu().detach().numpy().size for x in model.parameters()]).sum()
     
