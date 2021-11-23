@@ -1,4 +1,3 @@
-from typing import OrderedDict
 import torch
 import torch.nn as nn
 import torchvision
@@ -65,8 +64,8 @@ data_aug_transforms.extend([
     transforms.RandomEqualize(p=1.0),
     #transforms.ColorJitter(
     #    brightness=(0.2, 0.8),
-        #contrast=(0.2,0.5),
-        #saturation=(0.1,0.3),
+    #    contrast=(0.2,0.5),
+    #    saturation=(0.1,0.3),
     #    hue=(-0.2, 0.2)
     #    ),
     transforms.RandomCrop(32, padding=4),

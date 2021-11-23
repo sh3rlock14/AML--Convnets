@@ -3,8 +3,16 @@ import torch.nn as nn
 import torchvision
 from torchvision import models
 import torchvision.transforms as transforms
+import numpy as np
+import copy
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
+import os
+
+
+os.environ['KMP_DUPLICATE_LIB_OK']='True' #workaround for numpy torch collision
 
 def weights_init(m):
     if type(m) == nn.Linear:
@@ -27,15 +35,15 @@ print('Using device: %s'%device)
 input_size = 32 * 32 * 3
 layer_config= [512, 256]
 num_classes = 10
-num_epochs = 30
+num_epochs = 60
 batch_size = 200
-learning_rate = 1e-3
+learning_rate = 0.01 #1e-3
 learning_rate_decay = 0.99
-reg=0#0.001
-num_training= 49000
-num_validation =1000
+reg = 0#0.001
+num_training = 49000
+num_validation = 1000
 fine_tune = True
-pretrained=True
+pretrained = True
 
 #-------------------------------------------------
 # Load the CIFAR-10 dataset
@@ -45,6 +53,14 @@ data_aug_transforms = [transforms.RandomHorizontalFlip(p=0.5)]#, transforms.Rand
 # TODO: Add to data_aug_transforms the best performing data augmentation      #
 # strategy and hyper-parameters as found out in Q3.a                          #
 ###############################################################################
+data_aug_transforms.extend([
+    transforms.RandomEqualize(p=1.0),
+    transforms.RandomCrop(32, padding=4),
+    transforms.ToTensor(),
+    transforms.RandomErasing(p=0.5, scale=(0.39, 0.40), ratio=(1.,1.)),
+    transforms.ToPILImage(), 
+    #transforms.RandomAffine(degrees=(-20,20))
+])
 
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
                                      transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
@@ -98,8 +114,25 @@ class VggModel(nn.Module):
         # disable training the feature extraction layers based on the fine_tune flag.   #
         #################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+        # Features
+        model = torchvision.models.vgg11_bn(pretrained = pretrained)
+        self.features = model.features
 
         
+        # Classification Part
+        layers = []
+
+        layers.append(nn.Flatten())
+        layers.append(nn.Linear(512, layer_config[0]))
+        layers.append(nn.BatchNorm1d(layer_config[0]))
+        layers.append(nn.ReLU())
+        layers.append(nn.Linear(layer_config[0], layer_config[1]))
+        layers.append(nn.BatchNorm1d(layer_config[1]))
+        layers.append(nn.ReLU())
+        layers.append(nn.Linear(layer_config[1], n_class))
+        
+        self.classifier = nn.Sequential(*layers)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -109,7 +142,16 @@ class VggModel(nn.Module):
         #################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        prev_out = x
+
+        for i in range(len(self.features)):
+            prev_out = self.features[i](prev_out)
         
+
+        for i in range(len(self.classifier)):
+            prev_out = self.classifier[i](prev_out)
+
+        out = prev_out
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return out
@@ -131,7 +173,8 @@ print("Params to learn:")
 if fine_tune:
     params_to_update = []
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    
+    for name, param in model.classifier.named_parameters():
+        params_to_update.append(param)
     
     
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -219,6 +262,33 @@ for epoch in range(num_epochs):
         #################################################################################
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        withEarlyStop = True
+        p = 10
+        tolerance = 1e-5
+
+        if withEarlyStop:
+            if epoch == 0:
+                patience = p 
+                best_val_acc = accuracy_val[-1] 
+                idBestEpoch = 0
+                epochs_with_no_improve = 0
+
+            if ( np.abs(accuracy_val[-1]-best_val_acc) >= tolerance) and ( (accuracy_val[-1]-best_val_acc) > 0):
+                best_model = copy.deepcopy(model)
+                idBestEpoch = epoch+1 # store the index of the best epoch so far (don't know if)
+                epochs_with_no_improve = 0
+                patience = p
+                best_val_loss= accuracy_val[-1]
+
+            else:
+                epochs_with_no_improve += 1
+                # Check early stopping condition
+                # if epochs_with_no_improve == patience:
+                if epochs_with_no_improve == patience:
+                    print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
+                    break
+            
+            print("@ epoch {}): best_val_acc: {}; val_acc: {}".format(epoch+1, best_val_acc, accuracy_val[-1]))
 
 
 
@@ -232,12 +302,14 @@ model.eval()
 
 
 plt.figure(2)
+plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.plot(loss_train, 'r', label='Train loss')
 plt.plot(loss_val, 'g', label='Val loss')
 plt.legend()
 plt.show()
 
 plt.figure(3)
+plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 plt.plot(accuracy_val, 'r', label='Val accuracy')
 plt.legend()
 plt.show()
@@ -250,7 +322,7 @@ plt.show()
 #################################################################################
 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-
+model = copy.deepcopy(best_model)
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
