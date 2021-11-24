@@ -57,7 +57,7 @@ data_aug_transforms.extend([
     transforms.RandomEqualize(p=1.0),
     transforms.RandomCrop(32, padding=4),
     transforms.ToTensor(),
-    transforms.RandomErasing(p=0.5, scale=(0.39, 0.40), ratio=(1.,1.)),
+    transforms.RandomErasing(p=0.65, scale=(0.39, 0.40), ratio=(1.,1.)),
     transforms.ToPILImage(), 
     #transforms.RandomAffine(degrees=(-20,20))
 ])
@@ -175,6 +175,11 @@ if fine_tune:
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     for name, param in model.classifier.named_parameters():
         params_to_update.append(param)
+        print("\t", name)
+
+    for name, param in model.features.named_parameters():
+        param.requires_grad = False
+        
     
     
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -263,7 +268,7 @@ for epoch in range(num_epochs):
 
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         withEarlyStop = True
-        p = 10
+        p = 20
         tolerance = 1e-5
 
         if withEarlyStop:
@@ -278,7 +283,7 @@ for epoch in range(num_epochs):
                 idBestEpoch = epoch+1 # store the index of the best epoch so far (don't know if)
                 epochs_with_no_improve = 0
                 patience = p
-                best_val_loss= accuracy_val[-1]
+                best_val_acc = accuracy_val[-1]
 
             else:
                 epochs_with_no_improve += 1

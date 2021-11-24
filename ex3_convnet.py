@@ -37,7 +37,7 @@ print('Using device: %s'%device)
 input_size = 3
 num_classes = 10
 hidden_size = [128, 512, 512, 512, 512]
-num_epochs = 20
+num_epochs = 40
 batch_size = 200
 learning_rate = 2e-3
 learning_rate_decay = 0.95
@@ -77,6 +77,7 @@ data_aug_transforms.extend([
     transforms.RandomAffine(degrees=(-20,20))
 ])
 
+data_aug_transforms.clear() # DEL AFTER ES
 
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
@@ -136,30 +137,6 @@ class ConvNet(nn.Module):
         layers = []
         
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        prev_size = input_size
-
-        """
-        n_blocks = len(hidden_layers)
-
-        for i in range(n_blocks):
-            block = nn.Sequential(OrderedDict([
-                ("conv{}".format(i+1), nn.Conv2d(prev_size, hidden_layers[i], kernel_size=3, stride=1, padding="same")),
-                ("maxPool{}".format(i+1), nn.MaxPool2d(kernel_size=2, stride=2)),
-                ("relu{}".format(i+1), nn.ReLU())
-            ])
-            )
-            setattr(self, "block{}".format(i+1), block)
-            prev_size = hidden_layers[i]
-        
-        FCblock = nn.Sequential(OrderedDict([ 
-                ("flatten", nn.Flatten()),
-                ("FC", nn.Linear(prev_size, out_features=num_classes))
-            ])
-            )
-
-        setattr(self, "FC", FCblock)
-
-        """
         prev_size = input_size
 
         # Add the convolutional blocks
@@ -362,16 +339,16 @@ for epoch in range(num_epochs):
         if withEarlyStop:
             if epoch == 0:
                 patience = p 
-                best_val_loss = loss_val[-1] 
+                best_val_acc = accuracy_val[-1] 
                 idBestEpoch = 0
                 epochs_with_no_improve = 0
 
-            if ( np.abs(loss_val[-1]-best_val_loss) >= tolerance) and ( (loss_val[-1]-best_val_loss) < 0):
+            if ( np.abs(accuracy_val[-1]-best_val_acc) >= tolerance) and ( (accuracy_val[-1]-best_val_acc) > 0):
                 best_model = copy.deepcopy(model)
                 idBestEpoch = epoch+1 # store the index of the best epoch so far (don't know if)
                 epochs_with_no_improve = 0
                 patience = p
-                best_val_loss= loss_val[-1]
+                best_val_acc= accuracy_val[-1]
 
             else:
                 epochs_with_no_improve += 1
@@ -381,10 +358,7 @@ for epoch in range(num_epochs):
                     print('Early stop at epoch {}!\nRestoring the best model.'.format(epoch+1))
                     break
             
-            print("@ epoch {}): best_val_loss: {}; loss_val: {}".format(epoch+1, best_val_loss, loss_val[-1]))
-
-        
-
+            print("@ epoch {}): best_val_acc: {}; val_acc: {}".format(epoch+1, best_val_acc, accuracy_val[-1]))  
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     
