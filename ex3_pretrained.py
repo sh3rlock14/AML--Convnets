@@ -35,7 +35,7 @@ print('Using device: %s'%device)
 input_size = 32 * 32 * 3
 layer_config= [512, 256]
 num_classes = 10
-num_epochs = 60
+num_epochs = 50
 batch_size = 200
 learning_rate = 0.01 #1e-3
 learning_rate_decay = 0.99
