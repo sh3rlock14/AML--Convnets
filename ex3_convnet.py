@@ -77,8 +77,6 @@ data_aug_transforms.extend([
     transforms.RandomAffine(degrees=(-20,20))
 ])
 
-data_aug_transforms.clear() # DEL AFTER ES
-
 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
