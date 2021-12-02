@@ -35,15 +35,15 @@ print('Using device: %s'%device)
 input_size = 32 * 32 * 3
 layer_config= [512, 256]
 num_classes = 10
-num_epochs = 50
+num_epochs = 30
 batch_size = 200
 learning_rate = 0.01 #1e-3
 learning_rate_decay = 0.99
 reg = 0#0.001
 num_training = 49000
 num_validation = 1000
-fine_tune = True
-pretrained = True
+fine_tune = False
+pretrained = False
 
 #-------------------------------------------------
 # Load the CIFAR-10 dataset
@@ -54,12 +54,10 @@ data_aug_transforms = [transforms.RandomHorizontalFlip(p=0.5)]#, transforms.Rand
 # strategy and hyper-parameters as found out in Q3.a                          #
 ###############################################################################
 data_aug_transforms.extend([
-    transforms.RandomEqualize(p=1.0),
     transforms.RandomCrop(32, padding=4),
     transforms.ToTensor(),
-    transforms.RandomErasing(p=0.65, scale=(0.39, 0.40), ratio=(1.,1.)),
-    transforms.ToPILImage(), 
-    #transforms.RandomAffine(degrees=(-20,20))
+    transforms.RandomErasing(p=0.5, scale=(0.39, 0.40), ratio=(1.,1.)),
+    transforms.ToPILImage()
 ])
 
 norm_transform = transforms.Compose(data_aug_transforms+[transforms.ToTensor(),
