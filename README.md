@@ -1,5 +1,5 @@
 # AML--Convnets
- > AML second homework: Convnets
+ > Advanced Machine Learning (AML) second homework: Convnets
 
 ---
 
